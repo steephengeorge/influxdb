@@ -147,6 +147,7 @@ func TestCmdOrg(t *testing.T) {
 			name     string
 			expected called
 			flags    []string
+			command  string
 			envVars  map[string]string
 		}{
 			{
@@ -178,6 +179,21 @@ func TestCmdOrg(t *testing.T) {
 				},
 				flags:    []string{"-i=" + influxdb.ID(1).String()},
 				expected: called{name: "name1", id: 1},
+			},
+			// if alias commands fail with "unknown flag: --org-id", it's because the alias is missing
+			{
+				name:     "ls alias",
+				command:  "ls",
+				flags:    []string{"--name=name1"},
+				envVars:  envVarsZeroMap,
+				expected: called{name: "name1"},
+			},
+			{
+				name:     "find alias",
+				command:  "find",
+				flags:    []string{"--name=name1"},
+				envVars:  envVarsZeroMap,
+				expected: called{name: "name1"},
 			},
 		}
 
@@ -211,7 +227,12 @@ func TestCmdOrg(t *testing.T) {
 				)
 				cmdFn, calls := cmdFn()
 				cmd := builder.cmd(cmdFn)
-				cmd.SetArgs(append([]string{"org", "find"}, tt.flags...))
+
+				if tt.command == "" {
+					tt.command = "find"
+				}
+
+				cmd.SetArgs(append([]string{"org", tt.command}, tt.flags...))
 
 				require.NoError(t, cmd.Execute())
 				assert.Equal(t, tt.expected, *calls)

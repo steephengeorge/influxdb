@@ -189,6 +189,7 @@ func TestCmdBucket(t *testing.T) {
 			name     string
 			expected called
 			flags    []string
+			command  string
 			envVars  map[string]string
 		}{
 			{
@@ -250,6 +251,21 @@ func TestCmdBucket(t *testing.T) {
 				flags:    []string{"-i=" + influxdb.ID(1).String()},
 				expected: called{orgID: 2, name: "name1", id: 1},
 			},
+			// if alias commands fail with "unknown flag: --org-id", it's because the alias is missing
+			{
+				name:     "ls alias",
+				command:  "ls",
+				flags:    []string{"--org-id=" + influxdb.ID(3).String()},
+				envVars:  envVarsZeroMap,
+				expected: called{orgID: 3},
+			},
+			{
+				name:     "find alias",
+				command:  "find",
+				flags:    []string{"--org-id=" + influxdb.ID(3).String()},
+				envVars:  envVarsZeroMap,
+				expected: called{orgID: 3},
+			},
 		}
 
 		cmdFn := func() (func(*globalFlags, genericCLIOpts) *cobra.Command, *called) {
@@ -289,7 +305,11 @@ func TestCmdBucket(t *testing.T) {
 				cmdFn, calls := cmdFn()
 				cmd := builder.cmd(cmdFn)
 
-				cmd.SetArgs(append([]string{"bucket", "find"}, tt.flags...))
+				if tt.command == "" {
+					tt.command = "find"
+				}
+
+				cmd.SetArgs(append([]string{"bucket", tt.command}, tt.flags...))
 
 				require.NoError(t, cmd.Execute())
 				assert.Equal(t, tt.expected, *calls)

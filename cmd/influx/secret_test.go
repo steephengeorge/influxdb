@@ -34,6 +34,7 @@ func TestCmdSecret(t *testing.T) {
 			name     string
 			expected called
 			flags    []string
+			command  string
 			envVars  map[string]string
 		}{
 			{
@@ -54,6 +55,21 @@ func TestCmdSecret(t *testing.T) {
 					"INFLUX_ORG": "rg",
 				},
 				flags:    []string{},
+				expected: called{"k1", "k2", "k3"},
+			},
+			// if alias commands fail with "unknown flag: --org-id", it's because the alias is missing
+			{
+				name:     "ls alias",
+				command:  "ls",
+				flags:    []string{"--org=rg"},
+				envVars:  envVarsZeroMap,
+				expected: called{"k1", "k2", "k3"},
+			},
+			{
+				name:     "find alias",
+				command:  "find",
+				flags:    []string{"--org=rg"},
+				envVars:  envVarsZeroMap,
 				expected: called{"k1", "k2", "k3"},
 			},
 		}
@@ -85,7 +101,12 @@ func TestCmdSecret(t *testing.T) {
 				)
 				nestedCmdFn, calls := cmdFn()
 				cmd := builder.cmd(nestedCmdFn)
-				cmd.SetArgs(append([]string{"secret", "find"}, tt.flags...))
+
+				if tt.command == "" {
+					tt.command = "find"
+				}
+
+				cmd.SetArgs(append([]string{"secret", tt.command}, tt.flags...))
 
 				require.NoError(t, cmd.Execute())
 				assert.Equal(t, tt.expected, *calls)
