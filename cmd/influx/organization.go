@@ -145,7 +145,7 @@ func (b *cmdOrgBuilder) deleteRunEFn(cmd *cobra.Command, args []string) error {
 
 func (b *cmdOrgBuilder) cmdFind() *cobra.Command {
 	cmd := b.newCmd("list", b.findRunEFn)
-	cmd.Short = "Find organizations"
+	cmd.Short = "List organizations"
 	cmd.Aliases = []string{"find", "ls"}
 
 	opts := flagOpts{

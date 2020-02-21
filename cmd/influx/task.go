@@ -124,7 +124,7 @@ var taskFindFlags struct {
 
 func taskFindCmd(opt genericCLIOpts) *cobra.Command {
 	cmd := opt.newCmd("list", taskFindF)
-	cmd.Short = "Find tasks"
+	cmd.Short = "List tasks"
 	cmd.Aliases = []string{"find", "ls"}
 
 	taskFindFlags.org.register(cmd, false)
@@ -373,7 +373,7 @@ var taskLogFindFlags struct {
 
 func taskLogFindCmd(opt genericCLIOpts) *cobra.Command {
 	cmd := opt.newCmd("list", taskLogFindF)
-	cmd.Short = "find logs for task"
+	cmd.Short = "List logs for task"
 	cmd.Aliases = []string{"find", "ls"}
 
 	cmd.Flags().StringVarP(&taskLogFindFlags.taskID, "task-id", "", "", "task id (required)")
@@ -432,7 +432,7 @@ func taskLogFindF(cmd *cobra.Command, args []string) error {
 func taskRunCmd(opt genericCLIOpts) *cobra.Command {
 	cmd := opt.newCmd("run", nil)
 	cmd.Run = seeHelp
-	cmd.Short = "find runs for a task"
+	cmd.Short = "List runs for a task"
 	cmd.AddCommand(
 		taskRunFindCmd(opt),
 		taskRunRetryCmd(opt),
@@ -451,7 +451,7 @@ var taskRunFindFlags struct {
 
 func taskRunFindCmd(opt genericCLIOpts) *cobra.Command {
 	cmd := opt.newCmd("list", taskRunFindF)
-	cmd.Short = "find runs for a task"
+	cmd.Short = "List runs for a task"
 	cmd.Aliases = []string{"find", "ls"}
 
 	cmd.Flags().StringVarP(&taskRunFindFlags.taskID, "task-id", "", "", "task id (required)")

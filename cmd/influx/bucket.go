@@ -161,7 +161,7 @@ func (b *cmdBucketBuilder) cmdDeleteRunEFn(cmd *cobra.Command, args []string) er
 
 func (b *cmdBucketBuilder) cmdFind() *cobra.Command {
 	cmd := b.newCmd("list", b.cmdFindRunEFn)
-	cmd.Short = "Find buckets"
+	cmd.Short = "List buckets"
 	cmd.Aliases = []string{"find", "ls"}
 
 	opts := flagOpts{

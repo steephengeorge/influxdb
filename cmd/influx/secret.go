@@ -131,7 +131,7 @@ func (b *cmdSecretBuilder) cmdDeleteRunEFn(cmd *cobra.Command, args []string) er
 
 func (b *cmdSecretBuilder) cmdFind() *cobra.Command {
 	cmd := b.newCmd("list", b.cmdFindRunEFn)
-	cmd.Short = "Find secrets"
+	cmd.Short = "List secrets"
 	cmd.Aliases = []string{"find", "ls"}
 	b.org.register(cmd, false)
 
