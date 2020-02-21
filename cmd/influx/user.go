@@ -281,7 +281,7 @@ func (b *cmdUserBuilder) cmdCreateRunEFn(*cobra.Command, []string) error {
 
 func (b *cmdUserBuilder) cmdFind() *cobra.Command {
 	cmd := b.newCmd("list", b.cmdFindRunEFn)
-	cmd.Short = "List user"
+	cmd.Short = "List users"
 	cmd.Aliases = []string{"find", "ls"}
 
 	cmd.Flags().StringVarP(&b.id, "id", "i", "", "The user ID")
