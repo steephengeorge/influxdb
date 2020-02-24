@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/influxdata/httprouter"
 	"github.com/influxdata/influxdb"
 	pctx "github.com/influxdata/influxdb/context"
+	"github.com/influxdata/influxdb/notification"
 	"github.com/influxdata/influxdb/notification/rule"
+	"github.com/influxdata/influxdb/pkg/httpc"
 	"go.uber.org/zap"
 )
 
@@ -699,4 +702,173 @@ func (h *NotificationRuleHandler) handleDeleteNotificationRule(w http.ResponseWr
 	h.log.Debug("Notification rule deleted", zap.String("notificationRuleID", fmt.Sprint(i)))
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+/*
+type NotificationRuleStore interface {
+	// UserResourceMappingService must be part of all NotificationRuleStore service,
+	// for create, search, delete.
+	UserResourceMappingService
+	// OrganizationService is needed for search filter
+	OrganizationService
+
+	// FindNotificationRuleByID returns a single notification rule by ID.
+	FindNotificationRuleByID(ctx context.Context, id ID) (NotificationRule, error)
+
+	// FindNotificationRules returns a list of notification rules that match filter and the total count of matching notification rules.
+	// Additional options provide pagination & sorting.
+	FindNotificationRules(ctx context.Context, filter NotificationRuleFilter, opt ...FindOptions) ([]NotificationRule, int, error)
+
+	// CreateNotificationRule creates a new notification rule and sets b.ID with the new identifier.
+	CreateNotificationRule(ctx context.Context, nr NotificationRuleCreate, userID ID) error
+
+	// UpdateNotificationRuleUpdateNotificationRule updates a single notification rule.
+	// Returns the new notification rule after update.
+	UpdateNotificationRule(ctx context.Context, id ID, nr NotificationRuleCreate, userID ID) (NotificationRule, error)
+
+	// PatchNotificationRule updates a single  notification rule with changeset.
+	// Returns the new notification rule state after update.
+	PatchNotificationRule(ctx context.Context, id ID, upd NotificationRuleUpdate) (NotificationRule, error)
+
+	// DeleteNotificationRule removes a notification rule by ID.
+	DeleteNotificationRule(ctx context.Context, id ID) error
+}
+*/
+
+type NotificationRuleLinks struct {
+	Self    string `json:"self"`
+	Labels  string `json:"labels"`
+	Members string `json:"members"`
+	Owners  string `json:"owners"`
+	Query   string `json:"query"`
+}
+
+type NotificationRuleStore struct {
+	Client *httpc.Client
+	// UserResourceMappingService
+	// OrganizationService
+}
+
+/*
+type: "pagerduty"
+every: "10m"
+offset: "0s"
+url: ""
+orgID: "7554d5ad97b0cd33"
+name: "just a little rule"
+activeStatus: "active"
+status: "active"
+endpointID: "04aa72fef0302000"
+tagRules: []
+labels: []
+statusRules: [{currentLevel: "CRIT", period: "1h", count: 1}]
+description: ""
+messageTemplate: "Notification Rule: ${ r._notification_rule_name } triggered by check: ${ r._check_name }: ${ r._message }"
+*/
+/*
+{
+"endpointID": "string",
+"orgID": "string",
+"status": "active",
+"name": "string",
+"sleepUntil": "string",
+"every": "string",
+"offset": "string",
+"runbookLink": "string",
+"limitEvery": 0,
+"limit": 0,
+"tagRules": [
+{}
+],
+"description": "string",
+"statusRules": [
+{}
+],
+"labels": [
+{}
+],
+"type": "PostNotificationRule",
+"channel": "string",
+"messageTemplate": "string"
+}
+*/
+
+type NotificationRuleCreate struct {
+	EndpointID  string `json:"endpointID"`
+	OrgID       string `json:"orgID"`
+	Status      string `json:"status"`
+	Name        string `json:"name"`
+	SleepUntil  string `json:"sleepUntil"`
+	Every       string `json:"every"`
+	Offset      string `json:"offset"`
+	RunbookLink string `json:"runbookLink"`
+	LimitEvery  int    `json:"limitEvery"`
+	Limit       int    `json:"limit"`
+	// TagRules    []struct {
+	// 	Key      string `json:"key"`
+	// 	Value    string `json:"value"`
+	// 	Operator string `json:"operator"`
+	// } `json:"tagRules"`
+	Description     string                    `json:"description"`
+	StatusRules     []notification.StatusRule `json:"statusRules"`
+	Labels          []influxdb.Label          `json:"labels"`
+	Type            string                    `json:"type"`
+	Channel         string                    `json:"channel"`
+	MessageTemplate string                    `json:"messageTemplate"`
+}
+
+type NotificationRule struct {
+	LatestCompleted time.Time `json:"latestCompleted"`
+	// LastRunStatus   string                    `json:"lastRunStatus"`
+	// LastRunError    string                    `json:"lastRunError"`
+	ID         influxdb.ID `json:"id"`
+	EndpointID influxdb.ID `json:"endpointID"`
+	OrgID      influxdb.ID `json:"orgID"`
+	OwnerID    influxdb.ID `json:"ownerID"`
+	CreatedAt  time.Time   `json:"createdAt"`
+	UpdatedAt  time.Time   `json:"updatedAt"`
+	Status     string      `json:"status"`
+	Name       string      `json:"name"`
+	// SleepUntil      string                    `json:"sleepUntil"`
+	Every  string `json:"every"`
+	Offset string `json:"offset"`
+	// RunbookLink     string                    `json:"runbookLink"`
+	// LimitEvery      int                       `json:"limitEvery"`
+	Limit int `json:"limit"`
+	// TagRules        []*influxdb.Tag           `json:"tagRules"`
+	Description string                    `json:"description"`
+	StatusRules []notification.StatusRule `json:"statusRules"`
+	// Labels          []*influxdb.Label         `json:"labels"`
+	// Links           NotificationRuleLinks     `json:"links"`
+	Type string `json:"type"`
+	// Channel         string                    `json:"channel"`
+	// MessageTemplate string                    `json:"messageTemplate"`
+}
+
+func (s *NotificationRuleStore) CreateNotificationRule(ctx context.Context, nr NotificationRule, userID influxdb.ID) (*NotificationRule, error) {
+	var n NotificationRule
+	err := s.Client.
+		PostJSON(nr, prefixNotificationRules).
+		DecodeJSON(&n).
+		Do(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &n, err
+}
+
+func (s *NotificationRuleStore) FindNotificationRuleByID(ctx context.Context, id influxdb.ID) (*NotificationRule, error) {
+	var n NotificationRule
+	err := s.Client.
+		Get(getNotificationRulesIDPath(id)).
+		DecodeJSON(&n).
+		Do(ctx)
+
+	return &n, err
+}
+
+func getNotificationRulesIDPath(id influxdb.ID) string {
+	return path.Join(prefixNotificationRules, id.String())
 }
